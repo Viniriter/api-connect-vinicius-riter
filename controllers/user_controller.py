@@ -56,26 +56,32 @@ def get_user_by_id(user_id):
     return jsonify(user), 200
 
 def update_user_by_id(user_id):
-    """Atualiza as informações de um usuário existente pelo ID."""
+    """Atualiza dados do usuário garantindo que campos enviados não sejam vazios."""
     user = next((u for u in users if u["id"] == user_id), None)
-
     if not user:
-        return jsonify({
-            "error": f"Usuário com ID {user_id} não encontrado."
-        }), 404
+        return jsonify({"error": f"Usuário com ID {user_id} não encontrado."}), 404
 
     data = request.get_json()
-    if not data:
-        return jsonify({
-            "error": "Corpo da requisição vazio ou formato JSON inválido."
-        }), 400
+    if not data or not isinstance(data, dict):
+        return jsonify({"error": "Corpo da requisição vazio ou formato JSON inválido."}), 400
 
-    # Atualiza apenas os campos enviados no body
-    user["name"] = data.get("name", user["name"])
-    user["email"] = data.get("email", user["email"])
+    # Validação condicional: só valida se a chave existir no payload
+    if "name" in data:
+        name = data.get("name")
+        if not isinstance(name, str) or not name.strip():
+            return jsonify({"error": "O campo 'name' não pode ser vazio."}), 400
+        user["name"] = name.strip()
 
-    return jsonify(user), 200
+    if "email" in data:
+        email = data.get("email")
+        if not isinstance(email, str) or not email.strip():
+            return jsonify({"error": "O campo 'email' não pode ser vazio."}), 400
+        user["email"] = email.strip()
 
+    return jsonify({
+        "data": user,
+        "message": "Usuário atualizado com sucesso."
+    }), 200
 
 def delete_user_by_id(user_id):
     """Remove um usuário do sistema com base no ID."""
